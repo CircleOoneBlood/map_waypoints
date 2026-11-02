@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+.focus.lock
+.focus-stage-*/
+output/
+# Keep user maps, routes, and active combinations local.
+/buffer/maps/*
+!/buffer/maps/.gitkeep
+/buffer/waypoints/*
+!/buffer/waypoints/.gitkeep
+/focus/*
+!/focus/.gitkeep
