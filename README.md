@@ -33,7 +33,7 @@ python3.12 -m venv .venv
 ```
 
 Tkinter is a system dependency and is not installed by pip. SciPy is needed for
-the smoothing utility and its tests.
+the waypoint editor, smoothing utility, and their tests.
 
 ## Add your own map and waypoints
 
@@ -90,6 +90,64 @@ Apply stages and validates the new combination before replacing focus. A failed
 swap rolls back. A successful Apply deletes the old combination; there is no
 focus history. Library files remain available. Avoid editing focus during Apply.
 
+## 3D speed view
+
+Click **3D speed** to open a rotatable view: X/Y are map coordinates and Z is
+speed in m/s. A translucent colored wall rises from the bold ground route to
+its speed profile. The map is faint so the route stays prominent.
+Drag to rotate and use the navigation toolbar to adjust the view.
+
+Click the ground route or the wall's upper edge to inspect the nearest point.
+The readout gives its **1-based CSV data-row number (header excluded)**, x/y and
+speed. Enter a number in **Point #** and press **Go** or Enter to locate it
+precisely. **Show point IDs** adds sparse labels to avoid crowding; every point
+is still selectable. A drag rotates the view without selecting a point.
+For example, “my_route.csv points 40–65” identifies a section unambiguously.
+Unsaved previews are labeled **Draft point**; their numbers may change when
+control points or smoothing settings change.
+
+The view uses the selected CSV, or the unsaved smooth draft when editing with
+a valid preview. Click **Refresh from main view** after changing the selection
+or generating a new preview. If control points have changed, click **Smooth
+preview** first. Point picking and dragging stay in the main 2D window.
+Opening or refreshing the 3D view does not change route data or focus.
+Supported CSV formats are `x,y,v` and `x,y,yaw,v`.
+
+## Draw and edit waypoints
+
+Restart MapWP after updating the code. Select the map, then enable
+**Edit / pick points**. The existing route stays faintly visible as a reference.
+
+1. Left-click points in driving order. Use fewer points on straight sections;
+   add a few around corners. The route closes automatically: do not repeat the first point.
+2. Drag a control point to move it. **Shift-click** deletes a point;
+   **Ctrl-click** inserts a point into the nearest segment. **Undo** or right-click
+   undoes the last edit. **Clear** starts over; **Reverse** changes driving direction.
+3. **Use current route** loads saved editor controls, or samples the selected CSV
+   roughly every metre if it was not created in the editor.
+4. Set **Smoothing (m)** and **Max speed (m/s)**, then click **Smooth preview**.
+   Larger smoothing permits more deviation from the clicked points. Use evenly
+   spaced controls and avoid clicking every small hand-drawn fluctuation.
+5. Enter a name without `.csv` and click **Save CSV**. The CSV and its control-point
+   report are saved under `buffer/waypoints/`. Replacing an existing name requires
+   confirmation. Saving selects the new route but does not change focus or Jetson.
+
+Turn off toolbar pan/zoom before clicking or dragging points. Navigation still
+works normally outside editing operations. Apply to focus is disabled while
+editing; save the route first, then explicitly apply it if desired.
+
+The preview is a periodic cubic spline, sampled about every 0.1 m, with columns
+`x,y,yaw,v`. The maximum-speed setting is a ceiling; speed can be lower in bends.
+The profile uses a 4.5 m/s² lateral-acceleration target, 1.5 m/s² acceleration,
+and 2 m/s² braking. These are design assumptions, not measured vehicle grip.
+Obstacle proximity (including center clearance below 0.30 m) and footprint
+overlap with occupied/unknown space are warnings only: they do not block saving
+or require an extra confirmation. Warnings are retained in the saved JSON report.
+Self-intersections and steering above 0.40 rad at a 0.33 m wheelbase are also
+warnings only. Geometry warnings never block saving; malformed or degenerate
+input that cannot produce a finite curve is still rejected. The footprint check uses the current MPC dimensions plus 3 cm margin. Static checks
+do not account for tracking/localization errors or replace low-speed testing.
+
 ## Command line
 
 After applying a combination to focus:
@@ -127,7 +185,8 @@ Use a new output filename to preserve the original route.
 
 ## Tests
 
-The tests generate synthetic data in temporary directories and need no real maps:
+The tests generate synthetic data in temporary directories and need no real maps.
+The GUI test requires a display and is skipped if Tk cannot open one:
 
 ```bash
 /usr/bin/python3 -E -B -m unittest discover -s tests -v
